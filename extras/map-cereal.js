@@ -25,10 +25,11 @@ define([
   "dojo/Deferred",
   "dojo/json",
 
-  "esri/map"
+  "esri/map",
+  "./feature-collection-shell"
 ], function(
   declare, lang, arrayUtils, connect, Deferred, JSON,
-  Map
+  Map, FeatureCollectionShell
 ) {
   var Cereal = declare(null, {
 
@@ -104,7 +105,7 @@ define([
         var layer = this.map.getLayer(gid);
         if ( layer.declaredClass === "esri.layers.GraphicsLayer") {
           // console.log("cereal::graphics layer", layer.declaredClass);
-          // opLayers.push(this._serializeGraphics(layer));
+          opLayers.push(this._serializeGraphics(layer));
         }
         if ( layer.declaredClass === "esri.layers.FeatureLayer") {
           // console.log("cereal::feature layer", layer, layer.loaded);
@@ -117,7 +118,6 @@ define([
 
     // find the basemap, generate JSON
     _serializeBase: function() {
-      // TODO:  support isReference
       var baseMap = {};
       baseMap.baseMapLayers = [];
 
@@ -148,7 +148,7 @@ define([
           layerObj = this._serializeWebTiled(layer, layerObj) 
         }
         baseMap.baseMapLayers.push(layerObj);
-        baseMap.title = layer.name || layer.id;
+        // baseMap.title = layer.name || layer.id;
         return baseMap;
       }
       console.log("cereal::didn't find a basemap");
@@ -158,7 +158,64 @@ define([
     // turn graphics layer into a feature collection
     // return JSON for the feature collection
     _serializeGraphics: function(layer) {
+      // console.log("graphics", layer);
+      // have to turn this into a feature collection...
+      var fc = lang.clone(FeatureCollectionShell);
+      // get references to each point, line and polygon feature collection
+      // use an object so that graphic.geometry.type can be used to reference the 
+      // proper feature layer in the feature collection
+      var geoms = {
+        point: null,
+        polyline: null,
+        polygon: null
+      };
+      // TODO:  when looping through layers, need to add appropriate info in 
+      // layerDefinition.fields, currently only an object id field is included
+      arrayUtils.forEach(fc.featureCollection.layers, function(l) {
+        if ( l.layerDefinition.geometryType === "esriGeometryPolygon" ) {
+          geoms.polygon = l;
+        }
+        if ( l.layerDefinition.geometryType === "esriGeometryPolyline" ) {
+          geoms.polyline = l;
+        }
+        if ( l.layerDefinition.geometryType === "esriGeometryPoint" ) {
+          geoms.point = l;
+        }
+        l.nextObjectId = layer.graphics.length;
+      });
 
+      // loop through graphics, serialize geometry, attributes and symbols
+      arrayUtils.forEach(layer.graphics, function(g, idx) {
+        var gObj = g.toJson();
+        // check for attributes, popuplate OBJECTID, at minimum
+        // TODO:  don't hard code "OBJECTID" as the object id field name
+        if ( !gObj.hasOwnProperty("attributes") ) {
+          gObj.attributes = { OBJECTID: idx };
+        }
+        // add OBJECTID if it doesn't already exist in the graphic's attributes
+        if ( !gObj.attributes.hasOwnProperty("OBJECTID") ) {
+          gObj.attributes.OBJECTID = idx;
+        }
+        // add the geometry and attributes to the proper feature collection
+        geoms[g.geometry.type].featureSet.features.push({
+          attributes: gObj.attributes,
+          geometry: gObj.geometry
+        });
+        // add a symbol def for to the renderer
+        geoms[g.geometry.type].layerDefinition.drawingInfo.renderer.uniqueValueInfos.push({
+          symbol: gObj.symbol,
+          description: "",
+          value: "" + gObj.attributes.OBJECTID,
+          label: ""
+        });
+      });
+      // update feature collection id and title
+      fc.id = layer.id;
+      fc.title = layer.name || layer.id;
+      // console.log("fc ", fc);
+      // TODO:  handle info templates, which means update popupInfo for each 
+      // feature layer
+      return fc;
     },
 
     // return JSON for a feature layer
@@ -180,12 +237,16 @@ define([
 
     // return JSON for an ArcGISTiledMapServiceLayer
     _serializeTiled: function(layer) {
-      return {
+      var tiled = {
         id: layer.id,
         opacity: layer.opacity,
         visibility: layer.visible,
         url: layer.url
       };
+      if ( layer._isRefLayer ) {
+        tiled.isReference = true;
+      }
+      return tiled;
     },
 
     // web tiled layers require more info than ArcGISTiledMapServiceLayers
@@ -194,6 +255,8 @@ define([
       layerObj.subDomains = layer.subDomains;
       layerObj.templateUrl = layer.urlTemplate;
       layerObj.type = "WebTiledLayer";
+      layerObj.title = layer.id;
+      delete layerObj.url;
       return layerObj;
     },
 

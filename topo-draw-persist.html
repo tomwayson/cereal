@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=7, IE=9, IE=10">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title></title>
+    <link rel="stylesheet" href="//jsdev.arcgis.com/3.6/js/esri/css/esri.css">
+    <link rel="stylesheet" href="//jsdev.arcgis.com/3.6/js/dojo/dijit/themes/nihilo/nihilo.css">
+    <style>
+      html, body, #map {
+        font-family: sans-serif;
+        height: 100%; 
+        margin: 0; 
+        padding: 0; 
+        width: 100%; 
+      }
+      .shadow {
+        box-shadow: 0 0 5px #888;
+      }
+      #info {
+        background: #fff;
+        bottom: 20px;
+        color: #444;
+        position: absolute;
+        height: auto;
+        left: 20px;
+        padding: 1em;
+        text-align: right;
+        width: auto;
+        z-index: 40;
+      }
+    </style>
+    
+    <script>
+      var dojoConfig = {
+        packages: [{
+          name: "extras",
+          location: location.pathname.replace(/\/[^/]+$/, "") + "/extras"
+        }]
+      };
+    </script>
+    <!-- check the build date:  http://jsdev.arcgis.com/3.6/builddate.txt -->
+    <script src="//jsdev.arcgis.com/3.6/"></script>
+    <script>
+      var map, portal, cereal;
+    
+      require([
+        "esri/map",
+        "esri/layers/WebTiledLayer",
+        "extras/map-cereal", 
+        "extras/map-writer", 
+
+        "esri/layers/GraphicsLayer", 
+        "esri/graphic",
+        "esri/symbols/SimpleLineSymbol",
+        "esri/toolbars/draw",
+
+        "dojo/_base/lang",
+        "dojo/_base/connect",
+        "dojo/on",
+        "dojo/dom",
+        "dojo/dom-attr",
+        "dojo/query",
+        "dojo/domReady!"
+      ], function(
+        Map, WebTiled, Cereal, MapWriter,
+        GraphicsLayer, Graphic, SimpleLineSymbol, Draw, 
+        lang, connect, on, dom, domAttr, query
+      ) {
+        map = new Map("map", {
+          basemap: "topo",
+          center: [ -100, 40 ],
+          zoom: 4,
+          slider: false 
+        });
+
+        // add a graphics layer where lines will be drawn
+        var gl = new GraphicsLayer({ id: "lines" });
+        map.addLayer(gl);
+
+        var drawTools = new Draw(map);
+        connect.connect(drawTools, "onDrawEnd", drawGraphic);
+
+        // instance of class to serialize map to JSON that can be 
+        // used to create a webmap on arcgis.com
+        cereal = new Cereal({ 
+          map: map 
+        });
+
+        writer = new MapWriter({ 
+          map: map,
+          portalUrl: document.location.protocol + "//www.arcgis.com"
+          // portalUrl: document.location.protocol + "//devext.arcgis.com"
+        });
+
+        // listen for button click and save map to arcgis.com
+        on(dom.byId("save"), "click", function(evt) {
+          // get a title for the web map
+          var title = dom.byId("map-title").value|| "No title provided.";
+          writer.title = title;
+
+          // jsonify the map and push it to arcgis.com
+          cereal.toJSON().then(writer.save, writer.error);
+        });
+
+        on(dom.byId("draw"), "click", function(evt) {
+          drawTools.activate(Draw.FREEHAND_POLYLINE);
+          domAttr.set(this, "disabled", true);
+        });
+
+        function drawGraphic(geometry) {
+          drawTools.deactivate();
+          domAttr.set(dom.byId("draw"), "disabled", false);
+          var lines = map.getLayer("lines");
+          var graphic = new Graphic(geometry, new SimpleLineSymbol);
+          lines.add(graphic);
+        }
+      });
+    </script>
+  </head>
+  <body class="nihilo">
+    <div id="info" class="shadow">
+      <label for="map-title">Map title:  </label>
+      <input type="text" id="map-title">
+      <br>
+      <button id="draw">Draw a line</button>
+      <button id="save">Save to ArcGIS.com</button>
+    </div>
+    <div id="map"></div>
+  </body>
+</html>
+
