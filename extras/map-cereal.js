@@ -54,6 +54,7 @@ define([
     },
 
     // fired when the map and all of its layers have loaded
+    // should be done using evented (on and emit) but...I don't know how
     load: function() {
       this.loaded = true;
     },
@@ -78,64 +79,7 @@ define([
       return JSON.stringify(mapJSON);
     },
 
-    _checkLoaded: function() {
-      // check that the map is loaded
-      if ( !this.map.loaded ) {
-        this.loadEvents.map = this.map.on("load", lang.hitch(this, function() {
-          this.loadEvents.map.remove();
-          delete this.loadEvents.map;
-          this._decrementWaitCount();
-        }));
-        this._incrementWaitCount();
-      }
-
-      // build a list of all layer ids
-      var layerIds = [];
-      if ( this.map.basemapLayerIds ) {
-        layerIds = layerIds.concat(this.map.basemapLayerIds);
-      }
-      // map.basemapLayerIds and map.layerIds can contain the same IDs
-      // no need to duplicate those
-      arrayUtils.forEach(this.map.layerIds, function(id) {
-        if ( arrayUtils.indexOf(layerIds, id) === -1 ) {
-          layerIds.push(id);
-        }
-      }, this);
-      layerIds = layerIds.concat(this.map.graphicsLayerIds);
-      //  console.log("cereal::layerIds", layerIds);
-      
-      // loop through all layers, check if they're loaded
-      arrayUtils.forEach(layerIds, function(id) {
-        var layer = this.map.getLayer(id);
-        if ( !layer.loaded ) {
-          this.loadEvents[id] = layer.on("load", lang.hitch(this, function() {
-            this.loadEvents[id].remove();
-            delete this.loadEvents[id];
-            this._decrementWaitCount();
-          }));
-          this._incrementWaitCount();
-        }
-      }, this);
-
-      // on the off chance that everything is already loaded, fire load
-      if ( this.loadedWaiting === 0 ) {
-        this.load();
-      }
-    },
-
-    _decrementWaitCount: function() {
-      this.loadedWaiting = this.loadedWaiting - 1;
-      if ( this.loadedWaiting === 0 ) {
-        this.load();
-      }
-    },
-
-    _incrementWaitCount: function() {
-      this.loadedWaiting = this.loadedWaiting + 1;
-    },
-
     // bunch of helper methods
-
     _serialize: function() {
       var m = {};
       m.baseMap = this._serializeBase();
@@ -192,15 +136,15 @@ define([
       // look for a visible tiled layer(s)
       var vb = arrayUtils.filter(this.map.layerIds, function(lid) {
         var layer = this.map.getLayer(lid);
-        return (  layer.declaredClass === "esri.layers.ArcGISTiledMapServiceLayer" ||
-          layer.declaredClass === "esri.layers.WebTiledLayer") && 
+        return ( layer.declaredClass === "esri.layers.ArcGISTiledMapServiceLayer" ||
+          layer.declaredClass === "esri.layers.WebTiledLayer" ) && 
           layer.visible;
       }, this);
       if ( vb.length ) {
         // use the last visible tiled layer as it is on top
         var layer = this.map.getLayer(vb[vb.length - 1]);
         layerObj = this._serializeTiled(layer);
-        if ( layer instanceof WebTiled ) {
+        if ( layer.declaredClass === "esri.layers.WebTiledLayer" ) {
           layerObj = this._serializeWebTiled(layer, layerObj) 
         }
         baseMap.baseMapLayers.push(layerObj);
@@ -209,7 +153,6 @@ define([
       }
       console.log("cereal::didn't find a basemap");
       return baseMap;
-
     },
 
     // turn graphics layer into a feature collection
@@ -252,7 +195,69 @@ define([
       layerObj.templateUrl = layer.urlTemplate;
       layerObj.type = "WebTiledLayer";
       return layerObj;
+    },
+
+    // Couple of methods to check/manage whether or not the map
+    // and all of its layers are loaded (loaded means map.graphics and layer 
+    // metadata are available). It's extra work here but this simplifies 
+    // usage in an app since the developer doesn't need to manage onload
+    // events before hooking up an instance of this class...just new it up,
+    // pass a map and you're good.
+    _checkLoaded: function() {
+      if ( !this.map.loaded ) {
+        this.loadEvents.map = this.map.on("load", lang.hitch(this, function() {
+          this.loadEvents.map.remove();
+          delete this.loadEvents.map;
+          this._decrementWaitCount();
+        }));
+        this._incrementWaitCount();
+      }
+
+      // build a list of all layer ids
+      var layerIds = [];
+      if ( this.map.basemapLayerIds ) {
+        layerIds = layerIds.concat(this.map.basemapLayerIds);
+      }
+      // map.basemapLayerIds and map.layerIds can contain the same IDs
+      // no need to duplicate those
+      arrayUtils.forEach(this.map.layerIds, function(id) {
+        if ( arrayUtils.indexOf(layerIds, id) === -1 ) {
+          layerIds.push(id);
+        }
+      }, this);
+      layerIds = layerIds.concat(this.map.graphicsLayerIds);
+      //  console.log("cereal::layerIds", layerIds);
+      
+      // loop through all layers, check if they're loaded
+      arrayUtils.forEach(layerIds, function(id) {
+        var layer = this.map.getLayer(id);
+        if ( !layer.loaded ) {
+          this.loadEvents[id] = layer.on("load", lang.hitch(this, function() {
+            this.loadEvents[id].remove();
+            delete this.loadEvents[id];
+            this._decrementWaitCount();
+          }));
+          this._incrementWaitCount();
+        }
+      }, this);
+
+      // on the off chance that everything is already loaded, fire load
+      if ( this.loadedWaiting === 0 ) {
+        this.load();
+      }
+    },
+
+    _decrementWaitCount: function() {
+      this.loadedWaiting = this.loadedWaiting - 1;
+      if ( this.loadedWaiting === 0 ) {
+        this.load();
+      }
+    },
+
+    _incrementWaitCount: function() {
+      this.loadedWaiting = this.loadedWaiting + 1;
     }
+
   });
 
   return Cereal;
