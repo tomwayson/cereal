@@ -61,7 +61,6 @@
         lang, dom, query
       ) {
         map = new Map("map", {
-          // basemap: "hybrid",
           center: [ -100, 40 ],
           zoom: 4,
           slider: false 
@@ -74,6 +73,12 @@
           "copyright": "Stamen Watercolor" 
         });
         map.addLayer(watercolor);
+
+        var usaUrl = "https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/2";
+        var fl = new FeatureLayer(usaUrl, {
+          mode: FeatureLayer.MODE_ONDEMAND
+        });
+        map.addLayer(fl);
 
         // instance of class to serialize map to JSON that can be 
         // used to create a webmap on arcgis.com

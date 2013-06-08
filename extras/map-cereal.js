@@ -93,7 +93,7 @@ define([
       // currently only supports graphics and feature 
       // layers explicitly added to the map
       //
-      // TODO:  support graphic layers
+      // TODO:  support graphics layers
       // TODO:  serialize graphics stored in map.graphics
       // TODO:  support dynamic map service layers
       // TODO:  support image service layers
