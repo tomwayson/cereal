@@ -25,12 +25,10 @@ define([
   "dojo/Deferred",
   "dojo/json",
 
-  "esri/map",
-  "esri/layers/ArcGISTiledMapServiceLayer",
-  "esri/layers/WebTiledLayer"
+  "esri/map"
 ], function(
   declare, lang, arrayUtils, connect, Deferred, JSON,
-  Map, Tiled, WebTiled
+  Map
 ) {
   var Cereal = declare(null, {
 
@@ -194,7 +192,9 @@ define([
       // look for a visible tiled layer(s)
       var vb = arrayUtils.filter(this.map.layerIds, function(lid) {
         var layer = this.map.getLayer(lid);
-        return (layer instanceof Tiled || layer instanceof WebTiled) && layer.visible;
+        return (layer.declaredClass === "esri.layers.ArcGISTiledMapServiceLayer" ||
+          layer.declaredClass === "esri.layers.WebTiledLayer") && 
+          layer.visible;
       }, this);
       if ( vb.length ) {
         // use the last visible tiled layer as it is on top
