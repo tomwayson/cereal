@@ -60,20 +60,20 @@ define([
 
     // main method to call
     // returns a deferred which is resolved once map and all layers are loaded
-    toJson: function() {
+    toJSON: function() {
       var def = new Deferred();
       if ( !this.loaded ) {
         var c = connect.connect(this, "load", lang.hitch(this, function() {
           connect.disconnect(c);
-          def.resolve(this._toJson())
+          def.resolve(this._toJSON())
         }));
       } else {
-        def.resolve(this._toJson());
+        def.resolve(this._toJSON());
       }
       return def;
     },
 
-    _toJson: function() {
+    _toJSON: function() {
       var mapJSON = this._serialize();
       return JSON.stringify(mapJSON);
     },
@@ -192,7 +192,7 @@ define([
       // look for a visible tiled layer(s)
       var vb = arrayUtils.filter(this.map.layerIds, function(lid) {
         var layer = this.map.getLayer(lid);
-        return (layer.declaredClass === "esri.layers.ArcGISTiledMapServiceLayer" ||
+        return (  layer.declaredClass === "esri.layers.ArcGISTiledMapServiceLayer" ||
           layer.declaredClass === "esri.layers.WebTiledLayer") && 
           layer.visible;
       }, this);

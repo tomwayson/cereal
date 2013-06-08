@@ -91,7 +91,7 @@
           writer.title = title;
 
           // jsonify the map and push it to arcgis.com
-          cereal.toJson().then(writer.save, writer.error);
+          cereal.toJSON().then(writer.save, writer.error);
         });
       });
     </script>
