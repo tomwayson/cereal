@@ -53,11 +53,15 @@
 
         "esri/layers/GraphicsLayer", 
         "esri/graphic",
-        "esri/symbols/SimpleLineSymbol",
         "esri/toolbars/draw",
+
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/symbols/SimpleLineSymbol",
+        "esri/symbols/SimpleFillSymbol",
 
         "dojo/_base/lang",
         "dojo/_base/connect",
+        "dojo/_base/Color",
         "dojo/on",
         "dojo/dom",
         "dojo/dom-attr",
@@ -65,8 +69,9 @@
         "dojo/domReady!"
       ], function(
         Map, WebTiled, Cereal, MapWriter,
-        GraphicsLayer, Graphic, SimpleLineSymbol, Draw, 
-        lang, connect, on, dom, domAttr, query
+        GraphicsLayer, Graphic, Draw,  
+        SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, 
+        lang, connect, Color, on, dom, domAttr, query
       ) {
         map = new Map("map", {
           basemap: "topo",
@@ -76,7 +81,7 @@
         });
 
         // add a graphics layer where lines will be drawn
-        var gl = new GraphicsLayer({ id: "lines" });
+        var gl = new GraphicsLayer({ id: "shapes" });
         map.addLayer(gl);
 
         var drawTools = new Draw(map);
@@ -104,17 +109,40 @@
           cereal.toJSON().then(writer.save, writer.error);
         });
 
-        on(dom.byId("draw"), "click", function(evt) {
-          drawTools.activate(Draw.FREEHAND_POLYLINE);
+        on(dom.byId("POINT"), "click", function(evt) {
+          drawTools.activate(Draw[this.id]);
+          domAttr.set(this, "disabled", true);
+        });
+        on(dom.byId("FREEHAND_POLYLINE"), "click", function(evt) {
+          drawTools.activate(Draw[this.id]);
+          domAttr.set(this, "disabled", true);
+        });
+        on(dom.byId("FREEHAND_POLYGON"), "click", function(evt) {
+          drawTools.activate(Draw[this.id]);
           domAttr.set(this, "disabled", true);
         });
 
         function drawGraphic(geometry) {
           drawTools.deactivate();
-          domAttr.set(dom.byId("draw"), "disabled", false);
-          var lines = map.getLayer("lines");
-          var graphic = new Graphic(geometry, new SimpleLineSymbol);
-          lines.add(graphic);
+          query("button:disabled").forEach(function(node) {
+            domAttr.set(node, "disabled", false);
+          });
+          var sym;
+          switch (geometry.type) {
+            case "point":
+              sym = new SimpleMarkerSymbol().setColor(new Color("red"));
+              break;
+            case "polyline":
+              sym = new SimpleLineSymbol().setColor(new Color("blue"));
+              break;
+            case "polygon":
+              sym = new SimpleFillSymbol().setColor(new Color("green"));
+              break;
+          }
+          // domAttr.set(dom.byId("draw"), "disabled", false);
+          var shapes = map.getLayer("shapes");
+          var graphic = new Graphic(geometry, sym);
+          shapes.add(graphic);
         }
       });
     </script>
@@ -124,8 +152,11 @@
       <label for="map-title">Map title:  </label>
       <input type="text" id="map-title">
       <br>
-      <button id="draw">Draw a line</button>
       <button id="save">Save to ArcGIS.com</button>
+      <br>
+      <button id="POINT">Point</button>
+      <button id="FREEHAND_POLYLINE">Line</button>
+      <button id="FREEHAND_POLYGON">Poly</button>
     </div>
     <div id="map"></div>
   </body>

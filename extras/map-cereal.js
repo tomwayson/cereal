@@ -1,22 +1,41 @@
-// take an instance of esri/Map
-// create a JSON object representing it that can be pushed to arcgis.com
+// Take an instance of esri/Map and create a JSON string that can be 
+// pushed to arcgis.com and stored as an item
 //
-// basemap: 
-//   look for tiled layers that are visible
-//   var visibleTiled = arrayUtils.filter(map.layerIds, function(lid) {
-//     return (lid instanceof TiledLayer || WebTiledLayer) && lid.visible;
-//   });
-//   if more than one, use the last one as it is on top
-// 
-// operational layers:
-//   ...look for dynamic, kml, georss, graphics, feature layers
-//
-// public docs...go read all of it
+// Public docs...go read all of it:
 // http://resources.arcgis.com/en/help/arcgis-web-map-json/#/Web_map_format_overview/02qt00000007000000/
 // 
-// web maps with various layers types:
+// Web maps with various layers types:
 // http://resources.arcgis.com/en/help/arcgis-web-map-json/#/Single_basemap_layer/02qt00000016000000/
 //
+// Key properties of webmap json are baseMap and an operationalLayers.
+//
+// baseMap is an object, operationalLayers is an array.
+//
+// baseMap has a property called basemapLayers which is an array.
+// basemapLayers are tiled services and are optionally reference layers.
+// Reference layers sit on top of other non-vector layers.
+// 
+// Each object in operationalLayers represents a layer on to of the basemap.
+// Vector features are supported as feature collecitons
+// Dynamic (ArcGISDynamicMapServiceLayer) as well as WMS and Image Service 
+// layers
+//
+// This class knows how to serialize the following layer types:
+// –ArcGISTiledMapServiceLayer
+// –WebTiledLayer
+// –FeatureLayer (created from URL, no support for feature layers from feature collections yet)
+// –GraphicsLayer (partial, no support for info templates or renderers)
+//
+// Need to support the following:
+// –ArcGISDynamicMapServiceLayer
+// –ArcGISImageServiceLayer
+// –GeoRSSLayer
+// –KMLLayer
+// –MapImageLayer
+// –WMSLayer
+// –WMTSLayer
+// –CSV's?
+
 define([
   "dojo/_base/declare",
   "dojo/_base/lang",
@@ -62,10 +81,14 @@ define([
 
     // main method to call
     // returns a deferred which is resolved once map and all layers are loaded
+    //
+    // Maybe this should return an object and it should be up to the app to 
+    // stringify? That's how toJson methods currently work in the JS API
     toJSON: function() {
       var def = new Deferred();
       if ( !this.loaded ) {
         var c = connect.connect(this, "load", lang.hitch(this, function() {
+          console.log("map-cereal::on load fired");
           connect.disconnect(c);
           def.resolve(this._toJSON())
         }));
@@ -94,7 +117,7 @@ define([
       // currently only supports graphics and feature 
       // layers explicitly added to the map
       //
-      // TODO:  support graphics layers
+      // TODO:  support graphics layer renderer and info templates
       // TODO:  serialize graphics stored in map.graphics
       // TODO:  support dynamic map service layers
       // TODO:  support image service layers
@@ -169,6 +192,11 @@ define([
         polyline: null,
         polygon: null
       };
+      // TODO:  support renderers on graphics layers
+      // currently the code below creates a unique value renderer and
+      // adds a symbol for each object id...works, but causes duplication
+      // of symbol defs
+      //
       // TODO:  when looping through layers, need to add appropriate info in 
       // layerDefinition.fields, currently only an object id field is included
       arrayUtils.forEach(fc.featureCollection.layers, function(l) {
