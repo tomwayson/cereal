@@ -30,7 +30,7 @@ define(null, function() {
           },
           "popupInfo": {
             "title": "{OBJECTID}",
-            "description": "{OBJECTID}"
+            "description": "{*}"
           },
           "featureSet": {
             "geometryType": "esriGeometryPolygon",
@@ -63,7 +63,7 @@ define(null, function() {
           },
           "popupInfo": {
             "title": "{OBJECTID}",
-            "description": "{OBJECTID}"
+            "description": "{*}"
           },
           "featureSet": {
             "geometryType": "esriGeometryPolyline",
@@ -98,7 +98,7 @@ define(null, function() {
           },
           "popupInfo": {
             "title": "{OBJECTID}",
-            "description": "{OBJECTID}"
+            "description": "{*}"
           },
           "featureSet": {
             "geometryType": "esriGeometryPoint",

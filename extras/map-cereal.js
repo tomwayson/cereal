@@ -36,6 +36,9 @@
 // –WMTSLayer
 // –CSV's?
 
+// –layer defs on feature layer
+// –custom renderers
+
 define([
   "dojo/_base/declare",
   "dojo/_base/lang",
@@ -237,6 +240,20 @@ define([
           label: ""
         });
       });
+      
+      // add field definitions
+      if ( geoms.point && geoms.point.featureSet.features.length ) {
+        var fields = geoms.point.featureSet.features[0].attributes;
+        geoms.point.layerDefinition.fields = this._serializeFieldsDefs(fields);
+      }
+      if ( geoms.polyline && geoms.polyline.featureSet.features.length ) {
+        var fields = geoms.polyline.featureSet.features[0].attributes;
+        geoms.polyline.layerDefinition.fields = this._serializeFieldsDefs(fields);
+      }
+      if ( geoms.polygon && geoms.polygon.featureSet.features.length ) {
+        var fields = geoms.polygon.featureSet.features[0].attributes;
+        geoms.polygon.layerDefinition.fields = this._serializeFieldsDefs(fields);
+      }
       // update feature collection id and title
       fc.id = layer.id;
       fc.title = layer.name || layer.id;
@@ -244,6 +261,54 @@ define([
       // TODO:  handle info templates, which means update popupInfo for each 
       // feature layer
       return fc;
+    },
+
+    // always returns editable: false for all fields
+    _serializeFieldsDefs: function(fields) {
+      // generate array of field defintions
+      // structure:
+      // {
+      //   "alias": "<string>",
+      //   "name": "<string>",
+      //   "type": "<string>", 
+      //   "editable": false
+      // }
+      // supported values for type: esriFieldTypeOID, esriFieldTypeString, 
+      // esriFieldTypeInteger, esriFieldTypeDouble, esriFieldTypeDate
+      // editable is a boolean
+      var fieldObjects = [];
+      var fieldStructure = {
+        "alias": null,
+        "name": null,
+        "type": null,
+        "editable": false
+      };
+      for ( field in fields ) {
+        var f = lang.clone(fieldStructure);
+        // set name and alias to the name of the attribute
+        f.alias = f.name = field;
+        var v = fields[field];
+        // figure out the type
+        var t = Object.prototype.toString.call(v);
+        // hard coded for "objectid" to be objectid field...
+        // brittle ... need another solution
+        if ( field.toLowerCase() === "objectid" ) {
+          f.type = "esriFieldTypeOID";
+        } else if ( t === "[object String]" ) {
+          f.type = "esriFieldTypeString";
+        } else if ( t === "[object Number]") {
+          if ( v % 1 === 0 ) {
+            f.type = "esriFieldTypeInteger";
+          } else {
+            f.type = "esriFieldTypeDouble";
+          }
+        } else if ( t === "[object Date]" ) {
+          f.type = "esriFieldTypeDate";
+        }
+        fieldObjects.push(f);
+      }
+      console.log("serialized field objects", fieldObjects);
+      return fieldObjects;
     },
 
     // return JSON for a feature layer
