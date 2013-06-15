@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=7, IE=9, IE=10">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title></title>
+    <link rel="stylesheet" href="//jsdev.arcgis.com/3.6/js/esri/css/esri.css">
+    <link rel="stylesheet" href="//jsdev.arcgis.com/3.6/js/dojo/dijit/themes/nihilo/nihilo.css">
+    <style>
+      html, body, #map {
+        font-family: sans-serif;
+        height: 100%; 
+        margin: 0; 
+        padding: 0; 
+        width: 100%; 
+      }
+      .shadow {
+        box-shadow: 0 0 5px #888;
+      }
+      #info {
+        background: #fff;
+        bottom: 20px;
+        color: #444;
+        position: absolute;
+        height: auto;
+        left: 20px;
+        padding: 1em;
+        text-align: right;
+        width: auto;
+        z-index: 40;
+      }
+    </style>
+    
+    <script>
+      var dojoConfig = {
+        packages: [{
+          name: "extras",
+          location: location.pathname.replace(/\/[^/]+$/, "") + "/extras"
+        }]
+      };
+    </script>
+    <!-- check the build date:  http://jsdev.arcgis.com/3.6/builddate.txt -->
+    <script src="//jsdev.arcgis.com/3.6/"></script>
+    <script>
+      var map, portal, cereal;
+    
+      require([
+        "esri/map",
+        "esri/layers/WebTiledLayer",
+        "extras/map-cereal", 
+        "extras/map-writer", 
+
+        "esri/layers/GraphicsLayer", 
+        "esri/graphic",
+        "esri/geometry/Point",
+        "esri/geometry/Polyline",
+        "esri/geometry/Polygon",
+
+        "esri/symbols/SimpleMarkerSymbol",
+        "esri/symbols/SimpleLineSymbol",
+        "esri/symbols/SimpleFillSymbol",
+
+        "dojo/_base/lang",
+        "dojo/_base/connect",
+        "dojo/_base/Color",
+        "dojo/on",
+        "dojo/dom",
+        "dojo/dom-attr",
+        "dojo/query",
+        "dojo/domReady!"
+      ], function(
+        Map, WebTiled, Cereal, MapWriter,
+        GraphicsLayer, Graphic, Point, Polyline, Polygon,
+        SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, 
+        lang, connect, Color, on, dom, domAttr, query
+      ) {
+        map = new Map("map", {
+          basemap: "topo",
+          center: [-117.864, 36.899],
+          zoom: 7,
+          slider: false 
+        });
+
+        // add a graphics layer where lines will be drawn
+        var gl = new GraphicsLayer({ id: "shapes" });
+        map.addLayer(gl);
+
+        // geometries...
+        var point = new Point({"x":-13264847.916596157,"y":4332717.570185829,"spatialReference":{"wkid":102100}});
+        var line = new Polyline({"paths":[[[-13000681.546842657,4342501.509806329],[-13000681.546842657,4430556.9663908295],[-13039817.305324659,4743643.0342468275],[-13039817.305324659,4792562.732349327]]],"spatialReference":{"wkid":102100}});
+        var poly = new Polygon({"rings":[[[-13020249.426083658,4215310.294739829],[-13157224.580770656,4058767.2608118304],[-13167008.520391157,4058767.2608118304],[-13157224.580770656,4137038.77777583],[-13098520.943047658,4215310.294739829],[-13020249.426083658,4215310.294739829]]],"spatialReference":{"wkid":102100}});
+
+        gl.add(new Graphic(point, new SimpleMarkerSymbol().setColor(new Color("red")), {
+          "whoPoint": "someone",
+          "whatPoint": 1.5,
+          "whenPoint": new Date(),
+          "howmanyPoint": 1
+        }));
+        gl.add(new Graphic(line, new SimpleLineSymbol().setColor(new Color("blue")), {
+          "whoLine": "someone else",
+          "whatLine": 2.5,
+          "whenLine": new Date(),
+          "howmanyLine": 2 
+        }));
+        gl.add(new Graphic(poly, new SimpleFillSymbol().setColor(new Color("green")), {
+          "whoPoly": "no one",
+          "whatPoly": 3.5,
+          "whenPoly": new Date(),
+          "howmanyPoly": 3 
+        }));
+
+        // instance of class to serialize map to JSON that can be 
+        // used to create a webmap on arcgis.com
+        cereal = new Cereal({ 
+          map: map 
+        });
+
+        writer = new MapWriter({ 
+          map: map,
+          portalUrl: document.location.protocol + "//www.arcgis.com"
+          // portalUrl: document.location.protocol + "//devext.arcgis.com"
+        });
+
+        // listen for button click and save map to arcgis.com
+        on(dom.byId("save"), "click", function(evt) {
+          // get a title for the web map
+          var title = dom.byId("map-title").value|| "No title provided.";
+          writer.title = title;
+
+          // jsonify the map and push it to arcgis.com
+          cereal.toJSON().then(writer.save, writer.error);
+        });
+        
+      });
+    </script>
+  </head>
+  <body class="nihilo">
+    <div id="info" class="shadow">
+      <label for="map-title">Map title:  </label>
+      <input type="text" id="map-title">
+      <br>
+      <button id="save">Save to ArcGIS.com</button>
+    </div>
+    <div id="map"></div>
+  </body>
+</html>
+
