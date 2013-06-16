@@ -220,7 +220,6 @@ define([
         l.nextObjectId = layer.graphics.length;
       });
 
-
       // loop through graphics, serialize geometry, attributes and symbols
       arrayUtils.forEach(layer.graphics, function(g, idx) {
         var gObj = g.toJson();
