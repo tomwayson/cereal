@@ -56,6 +56,7 @@
         "esri/geometry/Point",
         "esri/geometry/Polyline",
         "esri/geometry/Polygon",
+        "esri/InfoTemplate",
 
         "esri/symbols/SimpleMarkerSymbol",
         "esri/symbols/SimpleLineSymbol",
@@ -71,7 +72,7 @@
         "dojo/domReady!"
       ], function(
         Map, WebTiled, Cereal, MapWriter,
-        GraphicsLayer, Graphic, Point, Polyline, Polygon,
+        GraphicsLayer, Graphic, Point, Polyline, Polygon, InfoTemplate,
         SimpleMarkerSymbol, SimpleLineSymbol, SimpleFillSymbol, 
         lang, connect, Color, on, dom, domAttr, query
       ) {
@@ -84,6 +85,7 @@
 
         // add a graphics layer where lines will be drawn
         var gl = new GraphicsLayer({ id: "shapes" });
+        gl.setInfoTemplate(new InfoTemplate("${who}", "What: ${what}<br>When: ${when}"));
         map.addLayer(gl);
 
         // geometries...
@@ -92,23 +94,26 @@
         var poly = new Polygon({"rings":[[[-13020249.426083658,4215310.294739829],[-13157224.580770656,4058767.2608118304],[-13167008.520391157,4058767.2608118304],[-13157224.580770656,4137038.77777583],[-13098520.943047658,4215310.294739829],[-13020249.426083658,4215310.294739829]]],"spatialReference":{"wkid":102100}});
 
         gl.add(new Graphic(point, new SimpleMarkerSymbol().setColor(new Color("red")), {
-          "whoPoint": "someone",
-          "whatPoint": 1.5,
-          "whenPoint": new Date(),
-          "howmanyPoint": 1
+          "who": "someone",
+          "what": 1.5,
+          "when": new Date(),
+          "howmany": 1
         }));
         gl.add(new Graphic(line, new SimpleLineSymbol().setColor(new Color("blue")), {
-          "whoLine": "someone else",
-          "whatLine": 2.5,
-          "whenLine": new Date(),
-          "howmanyLine": 2 
+          "who": "someone else",
+          "what": 2.5,
+          "when": new Date(),
+          "howmany": 2 
         }));
         gl.add(new Graphic(poly, new SimpleFillSymbol().setColor(new Color("green")), {
-          "whoPoly": "no one",
-          "whatPoly": 3.5,
-          "whenPoly": new Date(),
-          "howmanyPoly": 3 
+          "who": "no one",
+          "what": 3.5,
+          "when": new Date(),
+          "howmany": 3 
         }));
+
+        // no attributes
+        gl.add(new Graphic(new Point(-120, 35), new SimpleMarkerSymbol()));
 
         // instance of class to serialize map to JSON that can be 
         // used to create a webmap on arcgis.com

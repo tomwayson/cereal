@@ -199,9 +199,6 @@ define([
       // currently the code below creates a unique value renderer and
       // adds a symbol for each object id...works, but causes duplication
       // of symbol defs
-      //
-      // TODO:  when looping through layers, need to add appropriate info in 
-      // layerDefinition.fields, currently only an object id field is included
       arrayUtils.forEach(fc.featureCollection.layers, function(l) {
         if ( l.layerDefinition.geometryType === "esriGeometryPolygon" ) {
           geoms.polygon = l;
@@ -212,8 +209,17 @@ define([
         if ( l.layerDefinition.geometryType === "esriGeometryPoint" ) {
           geoms.point = l;
         }
+        // handle info template
+        // note that only looking for info template at the layer level, 
+        // info template on individual graphics are ignored
+        if ( layer.infoTemplate ) {
+          l.popupInfo.title = layer.infoTemplate.title.replace(/\$/g, "");
+          l.popupInfo.description = layer.infoTemplate.content.replace(/\$/g, "");
+          console.log("set layer info template", layer.infoTemplate, l.popupInfo);
+        }
         l.nextObjectId = layer.graphics.length;
       });
+
 
       // loop through graphics, serialize geometry, attributes and symbols
       arrayUtils.forEach(layer.graphics, function(g, idx) {
@@ -254,6 +260,7 @@ define([
         var fields = geoms.polygon.featureSet.features[0].attributes;
         geoms.polygon.layerDefinition.fields = this._serializeFieldsDefs(fields);
       }
+
       // update feature collection id and title
       fc.id = layer.id;
       fc.title = layer.name || layer.id;
