@@ -22,12 +22,12 @@
 //
 // This class knows how to serialize the following layer types:
 // –ArcGISTiledMapServiceLayer
+// –ArcGISDynamicMapServiceLayer
 // –WebTiledLayer
 // –FeatureLayer (created from URL, no support for feature layers from feature collections yet)
 // –GraphicsLayer (partial, no support for info templates or renderers)
 //
 // Need to support the following:
-// –ArcGISDynamicMapServiceLayer
 // –ArcGISImageServiceLayer
 // –GeoRSSLayer
 // –KMLLayer
@@ -122,7 +122,6 @@ define([
       //
       // TODO:  support graphics layer renderer and info templates
       // TODO:  serialize graphics stored in map.graphics
-      // TODO:  support dynamic map service layers
       // TODO:  support image service layers
       // TODO:  support kml and georss layers
       var opLayers = [];
@@ -136,6 +135,14 @@ define([
         if ( layer.declaredClass === "esri.layers.FeatureLayer") {
           // console.log("cereal::feature layer", layer, layer.loaded);
           opLayers.push(this._serializeFeatures(layer));
+        }
+      }, this);
+
+      arrayUtils.forEach(this.map.layerIds, function(lid) {
+        var layer = this.map.getLayer(lid);
+        if ( layer.declaredClass === "esri.layers.ArcGISDynamicMapServiceLayer" ) {
+          console.log("cereal::got a dyn layer");
+          opLayers.push(this._serializeDynamic(layer));
         }
       }, this);
       
@@ -179,6 +186,24 @@ define([
       }
       console.log("cereal::didn't find a basemap");
       return baseMap;
+    },
+
+    // generate JSON for a dynamic layer 
+    // "dynamic" refers to ArcGISDynamicMapServiceLayer:
+    // https://developers.arcgis.com/en/javascript/jsapi/arcgisdynamicmapservicelayer.html
+    //
+    // need to keep track of url, id, visibility, opacity and title
+    // example:  http://www.arcgis.com/sharing/content/items/039c0beaee9944c09e721438da1827e4/data?f=pjson
+    _serializeDynamic: function(layer) {
+      var info = {};
+
+      info.url = layer.url;
+      info.id = layer.id;
+      info.visibility = layer.visible;
+      info.opacity = layer.opacity;
+      info.title = layer.title || layer.id;
+      
+      return info;
     },
 
     // turn graphics layer into a feature collection
