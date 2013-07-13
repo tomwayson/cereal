@@ -15,7 +15,7 @@
 // basemapLayers are tiled services and are optionally reference layers.
 // Reference layers sit on top of other non-vector layers.
 // 
-// Each object in operationalLayers represents a layer on to of the basemap.
+// Each object in operationalLayers represents a layer on top of the basemap.
 // Vector features are supported as feature collecitons
 // Dynamic (ArcGISDynamicMapServiceLayer) as well as WMS and Image Service 
 // layers
@@ -117,8 +117,9 @@ define([
     },
 
     _serializeOperataional: function() {
-      // currently only supports graphics and feature 
-      // layers explicitly added to the map
+      // supports graphics and feature 
+      // layers explicitly added to the map as well as
+      // dynamic map service layers
       //
       // TODO:  support graphics layer renderer and info templates
       // TODO:  serialize graphics stored in map.graphics
@@ -126,6 +127,7 @@ define([
       // TODO:  support kml and georss layers
       var opLayers = [];
 
+      // graphics and feature layers
       arrayUtils.forEach(this.map.graphicsLayerIds, function(gid) {
         var layer = this.map.getLayer(gid);
         if ( layer.declaredClass === "esri.layers.GraphicsLayer") {
@@ -138,10 +140,10 @@ define([
         }
       }, this);
 
+      // dynamic map service layers
       arrayUtils.forEach(this.map.layerIds, function(lid) {
         var layer = this.map.getLayer(lid);
         if ( layer.declaredClass === "esri.layers.ArcGISDynamicMapServiceLayer" ) {
-          console.log("cereal::got a dyn layer");
           opLayers.push(this._serializeDynamic(layer));
         }
       }, this);
