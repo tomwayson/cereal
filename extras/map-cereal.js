@@ -43,21 +43,23 @@ define([
   "dojo/_base/declare",
   "dojo/_base/lang",
   "dojo/_base/array",
-  "dojo/_base/connect",
   "dojo/Deferred",
+  "dojo/Evented",
+  "dojo/on",
   "dojo/json",
 
   "esri/map",
   "./feature-collection-shell"
 ], function(
-  declare, lang, arrayUtils, connect, Deferred, JSON,
+  declare, lang, arrayUtils,
+  Deferred, Evented, on, JSON,
   Map, FeatureCollectionShell
 ) {
-  var Cereal = declare(null, {
+  var Cereal = declare([Evented], {
 
     loaded: false,
     loadEvents: {},
-    loadedWaiting: 0, 
+    loadedWaiting: 0,
     map: null, 
     version: null, 
 
@@ -80,6 +82,7 @@ define([
     // should be done using evented (on and emit) but...I don't know how
     load: function() {
       this.loaded = true;
+      this.emit("load", {});
     },
 
     // main method to call
@@ -90,15 +93,14 @@ define([
     toJSON: function() {
       var def = new Deferred();
       if ( !this.loaded ) {
-        var c = connect.connect(this, "load", lang.hitch(this, function() {
+        on.once(this, "load", lang.hitch(this, function() {
           console.log("map-cereal::on load fired");
-          connect.disconnect(c);
-          def.resolve(this._toJSON())
+          def.resolve(this._toJSON());
         }));
       } else {
         def.resolve(this._toJSON());
       }
-      return def;
+      return def.promise;
     },
 
     _toJSON: function() {
@@ -147,7 +149,7 @@ define([
           opLayers.push(this._serializeDynamic(layer));
         }
       }, this);
-      
+
       return opLayers;
     },
 
@@ -172,7 +174,7 @@ define([
       var vb = arrayUtils.filter(this.map.layerIds, function(lid) {
         var layer = this.map.getLayer(lid);
         return ( layer.declaredClass === "esri.layers.ArcGISTiledMapServiceLayer" ||
-          layer.declaredClass === "esri.layers.WebTiledLayer" ) && 
+          layer.declaredClass === "esri.layers.WebTiledLayer" ) &&
           layer.visible;
       }, this);
       if ( vb.length ) {
@@ -180,7 +182,7 @@ define([
         var layer = this.map.getLayer(vb[vb.length - 1]);
         layerObj = this._serializeTiled(layer);
         if ( layer.declaredClass === "esri.layers.WebTiledLayer" ) {
-          layerObj = this._serializeWebTiled(layer, layerObj) 
+          layerObj = this._serializeWebTiled(layer, layerObj);
         }
         baseMap.baseMapLayers.push(layerObj);
         // baseMap.title = layer.name || layer.id;
@@ -204,7 +206,7 @@ define([
       info.visibility = layer.visible;
       info.opacity = layer.opacity;
       info.title = layer.title || layer.id;
-      
+
       return info;
     },
 
@@ -272,18 +274,19 @@ define([
           label: ""
         });
       });
-      
+
       // add field definitions
+      var fields;
       if ( geoms.point && geoms.point.featureSet.features.length ) {
-        var fields = geoms.point.featureSet.features[0].attributes;
+        fields = geoms.point.featureSet.features[0].attributes;
         geoms.point.layerDefinition.fields = this._serializeFieldsDefs(fields);
       }
       if ( geoms.polyline && geoms.polyline.featureSet.features.length ) {
-        var fields = geoms.polyline.featureSet.features[0].attributes;
+        fields = geoms.polyline.featureSet.features[0].attributes;
         geoms.polyline.layerDefinition.fields = this._serializeFieldsDefs(fields);
       }
       if ( geoms.polygon && geoms.polygon.featureSet.features.length ) {
-        var fields = geoms.polygon.featureSet.features[0].attributes;
+        fields = geoms.polygon.featureSet.features[0].attributes;
         geoms.polygon.layerDefinition.fields = this._serializeFieldsDefs(fields);
       }
 
@@ -316,7 +319,7 @@ define([
         "type": null,
         "editable": false
       };
-      for ( field in fields ) {
+      for ( var field in fields ) {
         var f = lang.clone(fieldStructure);
         // set name and alias to the name of the attribute
         f.alias = f.name = field;
@@ -358,7 +361,7 @@ define([
         title: layer.name || layer.id,
         url: layer.url,
         visibility: layer.visible,
-      }
+      };
     },
 
     // return JSON for an ArcGISTiledMapServiceLayer
@@ -416,7 +419,7 @@ define([
       }, this);
       layerIds = layerIds.concat(this.map.graphicsLayerIds);
       //  console.log("cereal::layerIds", layerIds);
-      
+
       // loop through all layers, check if they're loaded
       arrayUtils.forEach(layerIds, function(id) {
         var layer = this.map.getLayer(id);
@@ -437,14 +440,13 @@ define([
     },
 
     _decrementWaitCount: function() {
-      this.loadedWaiting = this.loadedWaiting - 1;
-      if ( this.loadedWaiting === 0 ) {
+      if ( --this.loadedWaiting === 0 ) {
         this.load();
       }
     },
 
     _incrementWaitCount: function() {
-      this.loadedWaiting = this.loadedWaiting + 1;
+      this.loadedWaiting++;
     }
 
   });
