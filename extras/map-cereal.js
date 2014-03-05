@@ -79,7 +79,6 @@ define([
     },
 
     // fired when the map and all of its layers have loaded
-    // should be done using evented (on and emit) but...I don't know how
     load: function() {
       this.loaded = true;
       this.emit("load", {});
