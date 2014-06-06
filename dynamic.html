@@ -2,11 +2,10 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=7, IE=9, IE=10">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
     <title></title>
-    <link rel="stylesheet" href="//js.arcgis.com/3.6/js/esri/css/esri.css">
-    <link rel="stylesheet" href="//js.arcgis.com/3.6/js/dojo/dijit/themes/nihilo/nihilo.css">
+    <link rel="stylesheet" href="//js.arcgis.com/3.9/js/esri/css/esri.css">
+    <link rel="stylesheet" href="//js.arcgis.com/3.9/js/dojo/dijit/themes/nihilo/nihilo.css">
     <style>
       html, body, #map {
         font-family: sans-serif;
@@ -41,9 +40,9 @@
       };
     </script>
     <!-- check the build date:  http://js.arcgis.com/3.6/builddate.txt -->
-    <script src="//js.arcgis.com/3.6/"></script>
+    <script src="//js.arcgis.com/3.9/"></script>
     <script>
-      var map, portal, cereal;
+      var map, cereal, writer;
     
       require([
         "esri/map",
