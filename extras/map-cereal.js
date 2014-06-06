@@ -198,16 +198,12 @@ define([
     // "dynamic" refers to ArcGISDynamicMapServiceLayer:
     // https://developers.arcgis.com/en/javascript/jsapi/arcgisdynamicmapservicelayer.html
     //
-    // need to keep track of url, id, visibility, opacity and title
     // example:  http://www.arcgis.com/sharing/content/items/039c0beaee9944c09e721438da1827e4/data?f=pjson
     _serializeDynamic: function(layer) {
-      var info = {};
+      var info = this._serializeDynamicCommon(layer);
 
-      info.url = layer.url;
-      info.id = layer.id;
-      info.visibility = layer.visible;
-      info.opacity = layer.opacity;
-      info.title = layer.title || layer.id;
+      // TODO: other dynamic layer specific properties
+      // such as visibleLayers, renderers for dynamic layers?
 
       return info;
     },
@@ -221,29 +217,32 @@ define([
     //    "bandIds":[0],
     //    "format":"jpgpng",
     //    "mosaicRule":
-    //    {
-    //      "mosaicMethod" : "esriMosaicLockRaster",
-    //      "lockRasterIds":[1,3,5,6],
-    //      "ascending": true,
-    //      "mosaicOperation" : "MT_FIRST",
-    //      "where":"objected<7"
-    //    },
+    //       {
+    //         "mosaicMethod" : "<esriMosaicNone | esriMosaicCenter | esriMosaicNadir | esriMosaicViewpoint | 
+    //                            esriMosaicAttribute | esriMosaicLockRaster | esriMosaicNorthwest | esriMosaicSeamline>",
+    //         "where" : "<where>",
+    //         "sortField" : "<sortFieldName>",
+    //         "sortValue" : <sortValue>,
+    //         "ascending" : <true | false>,
+    //         "lockRasterIds" : [<rasterId1>, <rasterId2>],
+    //         "viewpoint" : <point>,
+    //         "fids" : [<fid1>, <fid2>],
+    //         "mosaicOperation" : "<MT_FIRST | MT_LAST | MT_MIN | MT_MAX | MT_MEAN | MT_BLEND>"
+    //       }
     //    "renderingRule": {...},
     //    "layerDefinition":{"definitionExpression":"objected<7"},
     //    "popupInfo":{...}
 
-    // example:  http://www.arcgis.com/sharing/content/items/039c0beaee9944c09e721438da1827e4/data?f=pjson
-    _serializeImage: function(layer) {
-      var info = {};
+    // TODO:
+    // Export an image by specifying a mosaic rule supported by the image service. (showing world temperature using the 8th raster only: August of 1950)
+    // http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/World/Temperature/ImageServer/exportImage?bbox=-180,-55.5,180,83.5&bboxSR=&size=&imageSR=&time=&format=jpgpng&pixelType=U8&noData=&interpolation=RSP_NearestNeighbor&compressionQuality=&bandIds=&mosaicRule={"mosaicMethod" : "esriMosaicLockRaster","lockRasterIds":[8]}&renderingRule=&f=image
 
-      info.url = layer.url;
-      info.id = layer.id;
-      info.visibility = layer.visible;
-      info.opacity = layer.opacity;
-      info.title = layer.title || layer.id;
+
+    _serializeImage: function(layer) {
+      var info = this._serializeDynamicCommon(layer);
 
       if (layer.renderingRule && layer.renderingRule.toJson) {
-        info.renderingRule = info.renderingRule.toJson();
+        info.renderingRule = layer.renderingRule.toJson();
       }
 
       // TODO:
@@ -259,6 +258,20 @@ define([
       //    },
       //    "layerDefinition":{"definitionExpression":"objected<7"},
       //    "popupInfo":{...}
+
+      return info;
+    },
+
+    // set properties common to dynamic and image layer types
+    // need to keep track of url, id, visibility, opacity and title
+    _serializeDynamicCommon: function(layer) {
+      var info = {};
+
+      info.url = layer.url;
+      info.id = layer.id;
+      info.visibility = layer.visible;
+      info.opacity = layer.opacity;
+      info.title = layer.title || layer.id;
 
       return info;
     },

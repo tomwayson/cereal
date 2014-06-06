@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=7, IE=9, IE=10">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title></title>
+    <link rel="stylesheet" href="//js.arcgis.com/3.9/js/esri/css/esri.css">
+    <link rel="stylesheet" href="//js.arcgis.com/3.9/js/dojo/dijit/themes/nihilo/nihilo.css">
+    <style>
+      html, body, #map {
+        font-family: sans-serif;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+      }
+      .shadow {
+        box-shadow: 0 0 5px #888;
+      }
+      #info {
+        background: #fff;
+        bottom: 20px;
+        color: #444;
+        position: absolute;
+        height: auto;
+        left: 20px;
+        padding: 1em;
+        text-align: right;
+        width: auto;
+        z-index: 40;
+      }
+    </style>
+
+    <script>
+      var dojoConfig = {
+        packages: [{
+          name: "extras",
+          location: location.pathname.replace(/\/[^/]+$/, "") + "/extras"
+        }]
+      };
+    </script>
+    <!-- check the build date:  http://js.arcgis.com/3.9/builddate.txt -->
+    <script src="//js.arcgis.com/3.9/"></script>
+    <script>
+      var map, portal, cereal;
+
+      require([
+        "esri/map",
+        "esri/layers/ArcGISImageServiceLayer",
+        "esri/layers/ImageServiceParameters",
+        "esri/layers/RasterFunction",
+
+        "extras/map-cereal",
+        "extras/map-writer",
+
+        "dojo/on",
+        "dojo/dom",
+        "dojo/domReady!"
+      ], function(
+        Map, ArcGISImageServiceLayer, ImageServiceParameters, RasterFunction,
+        Cereal, MapWriter,
+        on, dom
+      ) {
+        map = new Map("map", {
+          basemap: "gray",
+          center: [-118.253147, 36.230577],
+          zoom: 10
+        });
+
+        var serviceUrl = "http://sampleserver3.arcgisonline.com/ArcGIS/rest/services/Earthquakes/CaliforniaDEM/ImageServer";
+        var params = new ImageServiceParameters();
+        var rasterFunction = new RasterFunction();
+        rasterFunction.functionName = "Hillshade"; // "ShadedRelief";
+        rasterFunction.arguments = {};
+        rasterFunction.arguments.Azimuth = 215.0;
+        rasterFunction.arguments.Altitude = 60.0;
+        rasterFunction.arguments.ZFactor = 30.3;
+        rasterFunction.variableName = "DEM"; //"Raster";
+        params.noData = 0;
+        params.renderingRule = rasterFunction;
+        var imageServiceLayer = new ArcGISImageServiceLayer(serviceUrl, {
+          imageServiceParameters: params,
+          opacity: 0.25
+        });
+        map.addLayer(imageServiceLayer);
+        // instance of class to serialize map to JSON that can be
+        // used to create a webmap on arcgis.com
+        cereal = new Cereal({
+          map: map
+        });
+
+        writer = new MapWriter({
+          map: map,
+          portalUrl: document.location.protocol + "//www.arcgis.com"
+        });
+
+        // listen for button click and save map to arcgis.com
+        on(dom.byId("save"), "click", function(evt) {
+          // get a title for the web map
+          var title = dom.byId("map-title").value|| "No title provided.";
+          writer.title = title;
+
+          // jsonify the map and push it to arcgis.com
+          cereal.toJSON().then(function(webmap){
+            console.log(webmap);
+            writer.save(webmap);
+          }, writer.error);
+        });
+
+      });
+    </script>
+  </head>
+  <body class="nihilo">
+    <div id="info" class="shadow">
+      <label for="map-title">Map title:  </label>
+      <input type="text" id="map-title">
+      <br>
+      <button id="save">Save to ArcGIS.com</button>
+    </div>
+    <div id="map"></div>
+  </body>
+</html>
+
