@@ -71,9 +71,8 @@ define([
       // console.log("cereal ctor:  ", options);
       this.map = options.map;
 
-      // current web map version is 1.8 so default to that
-      // http://mediawikidev.esri.com/index.php/ArcGIS.com/home#ArcGIS_Web_Map_Specification
-      this.version = "1.8";
+      // current web map version is 1.9.1 so default to that
+      this.version = "1.9.1";
 
       this._checkLoaded();
     },
