@@ -118,7 +118,7 @@
           drawTools.deactivate();
           domAttr.set(dom.byId("draw"), "disabled", false);
           var lines = map.getLayer("lines");
-          var graphic = new Graphic(geometry, new SimpleLineSymbol);
+          var graphic = new Graphic(geometry, new SimpleLineSymbol());
           lines.add(graphic);
         }
       });
