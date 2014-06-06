@@ -181,7 +181,7 @@ define([
       if ( vb.length ) {
         // use the last visible tiled layer as it is on top
         var layer = this.map.getLayer(vb[vb.length - 1]);
-        layerObj = this._serializeTiled(layer);
+        var layerObj = this._serializeTiled(layer);
         if ( layer.declaredClass === "esri.layers.WebTiledLayer" ) {
           layerObj = this._serializeWebTiled(layer, layerObj);
         }
@@ -425,7 +425,7 @@ define([
         opacity: layer.opacity,
         title: layer.name || layer.id,
         url: layer.url,
-        visibility: layer.visible,
+        visibility: layer.visible
       };
     },
 
