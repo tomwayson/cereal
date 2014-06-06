@@ -1,9 +1,9 @@
-// Take an instance of esri/Map and create a JSON string that can be 
+// Take an instance of esri/Map and create a JSON string that can be
 // pushed to arcgis.com and stored as an item
 //
 // Public docs...go read all of it:
 // http://resources.arcgis.com/en/help/arcgis-web-map-json/#/Web_map_format_overview/02qt00000007000000/
-// 
+//
 // Web maps with various layers types:
 // http://resources.arcgis.com/en/help/arcgis-web-map-json/#/Single_basemap_layer/02qt00000016000000/
 //
@@ -14,10 +14,10 @@
 // baseMap has a property called basemapLayers which is an array.
 // basemapLayers are tiled services and are optionally reference layers.
 // Reference layers sit on top of other non-vector layers.
-// 
+//
 // Each object in operationalLayers represents a layer on top of the basemap.
 // Vector features are supported as feature collecitons
-// Dynamic (ArcGISDynamicMapServiceLayer) as well as WMS and Image Service 
+// Dynamic (ArcGISDynamicMapServiceLayer) as well as WMS and Image Service
 // layers
 //
 // This class knows how to serialize the following layer types:
@@ -60,8 +60,8 @@ define([
     loaded: false,
     loadEvents: {},
     loadedWaiting: 0,
-    map: null, 
-    version: null, 
+    map: null,
+    version: null,
 
     constructor: function(options) {
       if ( !options.map || !options.map instanceof Map ) {
@@ -87,7 +87,7 @@ define([
     // main method to call
     // returns a deferred which is resolved once map and all layers are loaded
     //
-    // Maybe this should return an object and it should be up to the app to 
+    // Maybe this should return an object and it should be up to the app to
     // stringify? That's how toJson methods currently work in the JS API
     toJSON: function() {
       var def = new Deferred();
@@ -118,7 +118,7 @@ define([
     },
 
     _serializeOperataional: function() {
-      // supports graphics and feature 
+      // supports graphics and feature
       // layers explicitly added to the map as well as
       // dynamic map service layers
       //
@@ -146,6 +146,9 @@ define([
         var layer = this.map.getLayer(lid);
         if ( layer.declaredClass === "esri.layers.ArcGISDynamicMapServiceLayer" ) {
           opLayers.push(this._serializeDynamic(layer));
+        }
+        if ( layer.declaredClass === "esri.layers.ArcGISImageServiceLayer" ) {
+          opLayers.push(this._serializeImage(layer));
         }
       }, this);
 
@@ -191,7 +194,7 @@ define([
       return baseMap;
     },
 
-    // generate JSON for a dynamic layer 
+    // generate JSON for a dynamic layer
     // "dynamic" refers to ArcGISDynamicMapServiceLayer:
     // https://developers.arcgis.com/en/javascript/jsapi/arcgisdynamicmapservicelayer.html
     //
@@ -209,6 +212,57 @@ define([
       return info;
     },
 
+    // generate JSON for an image layer
+    // "image" refers to ArcGISImageServiceLayer:
+    // https://developers.arcgis.com/en/javascript/jsapi/arcgisimageservicelayer.html
+    //
+    // in addition to url, id, visibility, opacity and title
+    // need to serialize the following:
+    //    "bandIds":[0],
+    //    "format":"jpgpng",
+    //    "mosaicRule":
+    //    {
+    //      "mosaicMethod" : "esriMosaicLockRaster",
+    //      "lockRasterIds":[1,3,5,6],
+    //      "ascending": true,
+    //      "mosaicOperation" : "MT_FIRST",
+    //      "where":"objected<7"
+    //    },
+    //    "renderingRule": {...},
+    //    "layerDefinition":{"definitionExpression":"objected<7"},
+    //    "popupInfo":{...}
+
+    // example:  http://www.arcgis.com/sharing/content/items/039c0beaee9944c09e721438da1827e4/data?f=pjson
+    _serializeImage: function(layer) {
+      var info = {};
+
+      info.url = layer.url;
+      info.id = layer.id;
+      info.visibility = layer.visible;
+      info.opacity = layer.opacity;
+      info.title = layer.title || layer.id;
+
+      if (layer.renderingRule && layer.renderingRule.toJson) {
+        info.renderingRule = info.renderingRule.toJson();
+      }
+
+      // TODO:
+      //    "bandIds":[0],
+      //    "format":"jpgpng",
+      //    "mosaicRule":
+      //    {
+      //      "mosaicMethod" : "esriMosaicLockRaster",
+      //      "lockRasterIds":[1,3,5,6],
+      //      "ascending": true,
+      //      "mosaicOperation" : "MT_FIRST",
+      //      "where":"objected<7"
+      //    },
+      //    "layerDefinition":{"definitionExpression":"objected<7"},
+      //    "popupInfo":{...}
+
+      return info;
+    },
+
     // turn graphics layer into a feature collection
     // return JSON for the feature collection
     _serializeGraphics: function(layer) {
@@ -216,7 +270,7 @@ define([
       // have to turn this into a feature collection...
       var fc = lang.clone(FeatureCollectionShell);
       // get references to each point, line and polygon feature collection
-      // use an object so that graphic.geometry.type can be used to reference the 
+      // use an object so that graphic.geometry.type can be used to reference the
       // proper feature layer in the feature collection
       var geoms = {
         point: null,
@@ -238,7 +292,7 @@ define([
           geoms.point = l;
         }
         // handle info template
-        // note that only looking for info template at the layer level, 
+        // note that only looking for info template at the layer level,
         // info template on individual graphics are ignored
         if ( layer.infoTemplate ) {
           l.popupInfo.title = layer.infoTemplate.title.replace(/\$/g, "");
@@ -293,7 +347,7 @@ define([
       fc.id = layer.id;
       fc.title = layer.name || layer.id;
       // console.log("fc ", fc);
-      // TODO:  handle info templates, which means update popupInfo for each 
+      // TODO:  handle info templates, which means update popupInfo for each
       // feature layer
       return fc;
     },
@@ -305,10 +359,10 @@ define([
       // {
       //   "alias": "<string>",
       //   "name": "<string>",
-      //   "type": "<string>", 
+      //   "type": "<string>",
       //   "editable": false
       // }
-      // supported values for type: esriFieldTypeOID, esriFieldTypeString, 
+      // supported values for type: esriFieldTypeOID, esriFieldTypeString,
       // esriFieldTypeInteger, esriFieldTypeDouble, esriFieldTypeDate
       // editable is a boolean
       var fieldObjects = [];
@@ -355,7 +409,7 @@ define([
       // corresponding integers are 0, 1, 2, repsectively
       return {
         id: layer.id,
-        mode: layer.mode, 
+        mode: layer.mode,
         opacity: layer.opacity,
         title: layer.name || layer.id,
         url: layer.url,
@@ -389,8 +443,8 @@ define([
     },
 
     // Couple of methods to check/manage whether or not the map
-    // and all of its layers are loaded (loaded means map.graphics and layer 
-    // metadata are available). It's extra work here but this simplifies 
+    // and all of its layers are loaded (loaded means map.graphics and layer
+    // metadata are available). It's extra work here but this simplifies
     // usage in an app since the developer doesn't need to manage onload
     // events before hooking up an instance of this class...just new it up,
     // pass a map and you're good.
