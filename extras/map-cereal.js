@@ -23,12 +23,12 @@
 // This class knows how to serialize the following layer types:
 // –ArcGISTiledMapServiceLayer
 // –ArcGISDynamicMapServiceLayer
+// –ArcGISImageServiceLayer
 // –WebTiledLayer
 // –FeatureLayer (created from URL, no support for feature layers from feature collections yet)
 // –GraphicsLayer (partial, no support for info templates or renderers)
 //
 // Need to support the following:
-// –ArcGISImageServiceLayer
 // –GeoRSSLayer
 // –KMLLayer
 // –MapImageLayer
