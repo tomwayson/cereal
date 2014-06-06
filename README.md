@@ -3,9 +3,15 @@ cereal
 
 Attempt at creating classes to serialize and write a JS API map to arcgis.com.
 
-extras/map-cereal.js:  toJSON method returns a JSON string with baseMap and operationalLayers properties. Currently, only feature layers created from a map service or feature service layer as well as graphics layers are supported. Support for additional layer types is...coming...soon. Maybe. 
+extras/map-cereal.js:  toJSON method returns a JSON string with baseMap and operationalLayers properties. Currently supports the following:
+* feature layers created from a map service or feature service
+* graphics layers
+* dynamic map service layers (partial)
+* image service layers (partial)
 
-extras/map-writer.js:  simple class to create an item in arcgis.com from a web map JSON. 
+Support for additional layer types is...coming...soon. Maybe.
+
+extras/map-writer.js:  simple class to create an item in arcgis.com from a web map JSON.
 
 extras/feature-collection-shell.js:  JSON template for creating a feature collection from a graphics layer.
 
